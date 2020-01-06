@@ -1,0 +1,190 @@
+Serialization & Deserialization
+
+Data Stream: 
+	Data Stream is used to perform binary IO operations for all the primitive data types in Java. We can perform I/O operations in an efficient and convenient way for Boolean, char, byte, short, int, long, float, double,  and Strings, etc. by using data stream. It also allows us to read-write Java primitive data types instead of raw bytes.
+Object Stream: 
+	the state of a JAVA object can be converted into a byte stream that can be stored into a database, file, or transported to any known location like from web tier to app tier as data value object in client-server RMI applications. This process of writing the object state into a byte stream is known as Serialization.
+	
+	Eventually, we can use this byte stream to retrieve the stored values and restore the object’s old state. This process of restoring the object’s old state is known as Deserialization.
+	
+	Serialization:
+	   Object -->Stream of bytes--> 1. File , 2. Database , 3. Memory etc
+	   
+	Deserialization:
+	  File , Database , Memory -->Stream Of Bytes -->Object
+	  
+MARKER INTERFACE:
+    An interface in Java without any field and method is a Marker interface. It is used to inform compiler that the class implementing it has some special behavior or meaning. Some of the Marker interfaces are-
+	1. java.io.Serializable
+	2. java.rmi.Remote
+	3. java.util.RandomAccess
+	4. java.lang.Cloneable
+	
+	## Although since Java 5 marker interfaces are replaced by annotations and they serve the same purpose as marker interfaces did before but for serializability we still use the interfaces and the transient keyword.
+
+	
+Data and Object stream Interfaces:
+	The following are the data and object stream interfaces which every Object Stream class implements. Object Stream class implements either of the two interfaces.
+
+	1. ObjectInput: It is the sub interface of DataInput
+	2. ObjectOutput: It is the sub interface of DataOutput
+	
+Object Stream Classes:
+    
+	ObjectInputStream: 
+	    1. This Java class is responsible for deserializing the previously
+    	   serialized objects and the primitive data.
+	    2. It reads the object from the graph of objects stored while using
+     	   FileInputStream.
+		3. Method readObject() is the main method used to deserialize the
+     	   object.The class of the object, the signature of the class, and the values of the non-transient and non-static fields of the class and all of its super types are read.
+		   public final Object readObject() throws IOException , 
+     	   ClassNotFoundException
+	ObjectOutputStream:
+        1. This Java class is used to store primitives and a graph of Java object
+     	   which are available to ObjectInputStream to read data from.
+		2. This does not care about saving the super class and sub class data but
+    	   it could be achieved by using the writeObject method or by using the methods for primitive data types supported by DataOutput.
+		3. Method writeObject() is a main method of this Java class which
+    	   serializes the object directly.
+           public final void writeObject(Object obj) throws IOException	
+		   
+Transient keyword:
+    There are scenarios in which we want to store only a part of the object i.e. we want to omit some specific fields from the stored object just like password field from any user class or an Employee or you can think of any other sensitive information.
+
+	In these cases we mark these fields as transient and this keyword protects the field from being saved during the process of serialization.
+
+	Example – transient private String password; 
+	
+Example:
+User.java:
+import java.io.Serializable; 
+public class User implements Serializable {
+ 
+    /**
+     * Generated Serial version Id
+     */
+    private static final long serialVersionUID = -55857686305273843L;
+ 
+    private String name;
+    private String username;
+    transient private String password;
+ 
+    @Override
+    public String toString() {
+        
+        String value = "name : " + name + "\nUserName : " + username
+                + "\nPassword : " + password;
+        return value;
+    }
+ 
+    /**
+     * Setters and getters methods.
+     */
+ 
+    public String getName() {
+        return name;
+    }
+ 
+    public void setName(String name) {
+        this.name = name;
+    }
+ 
+    public String getUsername() {
+        return username;
+    }
+ 
+    public void setUsername(String username) {
+        this.username = username;
+    }
+ 
+    public String getPassword() {
+        return password;
+    }
+ 
+    public void setPassword(String password) {
+        this.password = password;
+    }
+} 
+
+1. Make sure that the Java class you need to store must implement Serializable interface.
+2. Notice that password field in the above class is made transient because it is a sensitive information and we don’t want to store it or you can chose any other field.
+3. Also there is another field named serialVersionUID which is a Long variable and it should be defined for all the Java classes because if it is not and if in future we need to perform any changes in the class like variables, methods etc then we would never be able to deserialize an already serialized object. 
+
+SerializationUtil.java
+
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+ 
+/*
+  This class is a utility class for performing the serialization and
+  deserialization operations provided the required information.
+ */
+public class SerializationUtil {
+ 
+    /**
+     * deserialize to Object from given file. We use the general Object so as
+     * that it can work for any Java Class.
+     */
+    public static Object deserialize(String fileName) throws IOException,
+            ClassNotFoundException {
+        FileInputStream fis = new FileInputStream(fileName);
+        BufferedInputStream bis = new BufferedInputStream(fis);
+        ObjectInputStream ois = new ObjectInputStream(bis);
+        Object obj = ois.readObject();
+        ois.close();
+        return obj;
+    }
+ 
+    /**
+     * serialize the given object and save it to given file
+     */
+    public static void serialize(Object obj, String fileName)
+            throws IOException {
+        FileOutputStream fos = new FileOutputStream(fileName);
+        BufferedOutputStream bos = new BufferedOutputStream(fos);
+        ObjectOutputStream oos = new ObjectOutputStream(bos);
+        oos.writeObject(obj);
+        oos.close();
+    }
+} 
+
+File Streams(For file related operations) which are wrapped in
+Buffered Streams(for Speeding up the operations) which are finally wrapped into
+Object Streams(for serialization and deserialization operations).	
+
+SerializationTest.java
+
+import java.io.IOException;
+ 
+public class SerializationTest {
+ 
+    public static void main(String[] args) {
+        User user = new User();
+        user.setName("Pankaj");
+        user.setUsername("Pankaj.Saini");
+        user.setPassword("pankaj");
+ 
+        try {
+            /**
+             *  Serializing the object
+             */
+            SerializationUtil.serialize(user, "serialization.txt");
+ 
+            /**
+             * Deserializing the object
+             */
+            User newUser = (User) SerializationUtil.deserialize("serialization.txt");
+            System.out.println(newUser.toString());
+ 
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+}
+
